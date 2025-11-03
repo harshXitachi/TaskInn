@@ -14,13 +14,13 @@ export async function ensureUserInDatabase(supabaseUser: User) {
 
   try {
     // Check if user exists using raw SQL to avoid query builder issues
-    const existingUsers = await db.execute(
-      sql`SELECT * FROM "user" WHERE id = ${supabaseUser.id} LIMIT 1`
+    const result = await db.execute<any>(
+      sql`SELECT * FROM ${sql.identifier('user')} WHERE ${sql.identifier('id')} = ${supabaseUser.id} LIMIT 1`
     );
 
-    if (existingUsers.rows && existingUsers.rows.length > 0) {
+    if (result.rows && result.rows.length > 0) {
       // User exists, return it
-      return existingUsers.rows[0] as any;
+      return result.rows[0];
     }
 
     // User doesn't exist, create them
