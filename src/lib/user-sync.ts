@@ -13,16 +13,14 @@ export async function ensureUserInDatabase(supabaseUser: User) {
   }
 
   try {
-    // Check if user exists in database
-    const existingUser = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, supabaseUser.id))
-      .limit(1);
+    // Check if user exists in database using query API
+    const existingUser = await db.query.user.findFirst({
+      where: eq(user.id, supabaseUser.id),
+    });
 
-    if (existingUser.length > 0) {
+    if (existingUser) {
       // User exists, return it
-      return existingUser[0];
+      return existingUser;
     }
 
     // User doesn't exist, create them
