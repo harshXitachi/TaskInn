@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { user } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { User } from '@supabase/supabase-js';
 
 /**
@@ -13,17 +13,8 @@ export async function ensureUserInDatabase(supabaseUser: User) {
   }
 
   try {
-    // Check if user exists using raw SQL to avoid query builder issues
-    const result = await db.execute<any>(
-      sql`SELECT * FROM ${sql.identifier('user')} WHERE ${sql.identifier('id')} = ${supabaseUser.id} LIMIT 1`
-    );
-
-    if (result.rows && result.rows.length > 0) {
-      // User exists, return it
-      return result.rows[0];
-    }
-
-    // User doesn't exist, create them
+    // Simple approach - just try to get or create the user
+    // First try to create, if it fails due to duplicate, get it
     const userData = {
       id: supabaseUser.id,
       email: supabaseUser.email,
@@ -38,17 +29,33 @@ export async function ensureUserInDatabase(supabaseUser: User) {
       updatedAt: new Date(),
     };
 
-    const newUser = await db
-      .insert(user)
-      .values(userData)
-      .returning();
-
-    if (newUser.length === 0) {
-      throw new Error('Failed to create user in database');
+    try {
+      // Try to insert the user
+      const newUser = await db
+        .insert(user)
+        .values(userData)
+        .onConflictDoNothing()
+        .returning();
+      
+      if (newUser.length > 0) {
+        console.log(`Created new user in database: ${supabaseUser.email}`);
+        return newUser[0];
+      }
+    } catch (insertError) {
+      console.log('User already exists, fetching...');
     }
 
-    console.log(`Created new user in database: ${supabaseUser.email}`);
-    return newUser[0];
+    // If we get here, user exists, fetch it
+    const existingUsers = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, supabaseUser.id));
+    
+    if (existingUsers.length > 0) {
+      return existingUsers[0];
+    }
+    
+    throw new Error('Failed to get or create user');
   } catch (error: any) {
     console.error('Error ensuring user in database:', error);
     throw new Error(`Failed to sync user: ${error.message}`);
