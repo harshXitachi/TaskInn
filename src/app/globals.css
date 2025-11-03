@@ -1,0 +1,313 @@
+/* Updated: 2025-10-31T06:29:29.681Z */
+/* Updated: 2025-10-31T06:00:55.097Z */
+/* Updated: 2025-10-30T16:40:37.521Z */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: #f5f3f0;
+  --color-foreground: #000000;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #000000;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0a0a0a;
+
+  --color-primary: #000000;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f5f5f5;
+  --color-secondary-foreground: #171717;
+
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #6b7280;
+
+  --color-accent: #f5f5f5;
+  --color-accent-foreground: #171717;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-input: #ffffff;
+  --color-ring: #0a0a0a;
+
+  --color-chart-1: #e67e22;
+  --color-chart-2: #2d8659;
+  --color-chart-3: #1e3a5f;
+  --color-chart-4: #f1c40f;
+  --color-chart-5: #e74c3c;
+
+  --color-sidebar: #f7f7f7;
+  --color-sidebar-foreground: #404040;
+  --color-sidebar-primary: #1a1a1a;
+  --color-sidebar-primary-foreground: #fafafa;
+  --color-sidebar-accent: #f0f0f0;
+  --color-sidebar-accent-foreground: #1a1a1a;
+  --color-sidebar-border: #d4d4d8;
+  --color-sidebar-ring: #3b82f6;
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  --color-bg-primary: #f5f3f0;
+  --color-bg-secondary: #ffffff;
+  --color-bg-inverse: #3d464e;
+  --color-text-primary: #000000;
+  --color-text-secondary: #6b7280;
+  --color-text-inverse: #ffffff;
+  --color-accent-primary: #000000;
+  --color-accent-border: #000000;
+  --color-accent-yellow: #fef3c7;
+  --color-accent-pink: #fce4ec;
+  --color-accent-coral: #d97757;
+  --color-accent-teal: #7dd3c0;
+  --color-accent-blue: #60a5fa;
+  --color-border-light: rgba(0, 0, 0, 0.06);
+
+  --font-display: "Manrope", sans-serif;
+  --font-body: "Manrope", sans-serif;
+}
+
+/*
+  The default border color has changed to currentColor in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
+  }
+}
+
+@layer utilities {
+  body {
+    font-family: var(--font-body);
+  }
+}
+
+@layer base {
+  :root {
+    --background: var(--color-bg-primary);
+    --foreground: var(--color-text-primary);
+    --card: var(--color-bg-secondary);
+    --card-foreground: var(--color-text-primary);
+    --popover: var(--color-bg-secondary);
+    --popover-foreground: var(--color-text-primary);
+    --primary: var(--color-accent-primary);
+    --primary-foreground: var(--color-text-inverse);
+    --secondary: var(--color-muted);
+    --secondary-foreground: var(--color-text-primary);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-text-secondary);
+    --accent: var(--color-accent-yellow);
+    --accent-foreground: var(--color-text-primary);
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-destructive-foreground);
+    --border: var(--color-border-light);
+    --input: var(--color-input);
+    --ring: var(--color-accent-primary);
+    --chart-1: var(--color-chart-1);
+    --chart-2: var(--color-chart-2);
+    --chart-3: var(--color-chart-3);
+    --chart-4: var(--color-chart-4);
+    --chart-5: var(--color-chart-5);
+    --radius: 1.5rem; /* Default card radius */
+    --sidebar-background: var(--color-sidebar);
+    --sidebar-foreground: var(--color-sidebar-foreground);
+    --sidebar-primary: var(--color-sidebar-primary);
+    --sidebar-primary-foreground: var(--color-sidebar-primary-foreground);
+    --sidebar-accent: var(--color-sidebar-accent);
+    --sidebar-accent-foreground: var(--color-sidebar-accent-foreground);
+    --sidebar-border: var(--color-sidebar-border);
+    --sidebar-ring: var(--color-sidebar-ring);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .display-h1 {
+    font-size: 4.5rem; /* 72px */
+    line-height: 80px;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+
+  .display-h2 {
+    font-size: 3.5rem; /* 56px */
+    line-height: 64px;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  .display-h3 {
+    font-size: 2.5rem; /* 40px */
+    line-height: 48px;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  .display-h5 {
+    font-size: 1.75rem; /* 28px */
+    line-height: 36px;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+
+  .large-paragraph {
+    font-size: 1.25rem; /* 20px */
+    line-height: 32px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .paragraph {
+    font-size: 1rem; /* 16px */
+    line-height: 26px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .button-text {
+    font-size: 1rem; /* 16px */
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+
+  .tag {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem; /* 24px */
+    padding-right: 1.5rem; /* 24px */
+  }
+
+  @media (min-width: 768px) {
+    .container {
+      padding-left: 2rem; /* Adjust as needed for larger screens */
+      padding-right: 2rem; /* Adjust as needed for larger screens */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 3rem; /* Adjust as needed for larger screens */
+      padding-right: 3rem; /* Adjust as needed for larger screens */
+    }
+  }
+}
+
+/* Hide Next.js error overlay portal */
+nextjs-portal {
+  display: none !important;
+}

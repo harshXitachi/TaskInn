@@ -1,0 +1,50 @@
+import 'dotenv/config';
+import { db } from '../src/db';
+import { adminSettings } from '../src/db/schema';
+import bcrypt from 'bcrypt';
+
+async function seedAdminSettings() {
+  try {
+    console.log('Seeding admin settings...');
+    
+    // Check if admin settings already exist
+    const existing = await db.select().from(adminSettings).limit(1);
+    
+    if (existing.length > 0) {
+      console.log('Admin settings already exist. Skipping...');
+      return;
+    }
+    
+    // Hash default admin password
+    const defaultPassword = 'admin123'; // Change this!
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    
+    // Insert default admin settings
+    await db.insert(adminSettings).values({
+      commissionRate: 0.05, // 5% commission
+      adminUsername: 'admin',
+      adminPasswordHash: hashedPassword,
+      adminEmail: 'admin@taskinn.com',
+      totalEarnings: 0,
+    });
+    
+    console.log('✅ Successfully seeded admin settings!');
+    console.log('⚠️  Default admin credentials:');
+    console.log('   Username: admin');
+    console.log('   Password: admin123');
+    console.log('   Please change these credentials after first login!');
+  } catch (error) {
+    console.error('Error seeding admin settings:', error);
+    throw error;
+  }
+}
+
+seedAdminSettings()
+  .then(() => {
+    console.log('Seed complete!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Seed failed:', error);
+    process.exit(1);
+  });
