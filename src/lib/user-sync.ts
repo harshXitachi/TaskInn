@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { user } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { User } from '@supabase/supabase-js';
 
 /**
@@ -13,16 +13,14 @@ export async function ensureUserInDatabase(supabaseUser: User) {
   }
 
   try {
-    // Check if user exists in database
-    const existingUsers = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, supabaseUser.id))
-      .execute();
+    // Check if user exists using raw SQL to avoid query builder issues
+    const existingUsers = await db.execute(
+      sql`SELECT * FROM "user" WHERE id = ${supabaseUser.id} LIMIT 1`
+    );
 
-    if (existingUsers && existingUsers.length > 0) {
+    if (existingUsers.rows && existingUsers.rows.length > 0) {
       // User exists, return it
-      return existingUsers[0];
+      return existingUsers.rows[0] as any;
     }
 
     // User doesn't exist, create them
