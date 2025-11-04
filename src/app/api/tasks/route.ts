@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tasks, taskSubmissions } from '@/db/schema';
-import { eq, and, gte, lte, like, or, desc, asc } from 'drizzle-orm';
+import { eq, and, gte, lte, like, or, desc, asc, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -231,34 +231,41 @@ export async function POST(request: NextRequest) {
     // Note: We do NOT deduct money when creating a task
     // Money is only deducted when approving worker submissions
 
-    // Build insert data
-    const insertData: any = {
-      title: title.trim(),
-      description: description.trim(),
-      categoryId: categoryIdNum,
-      employerId: employerId.trim(),
-      price: priceNum,
-      currency: currency,
-      slots: slotsNum,
-      // status, slotsFilled, and createdAt will use database defaults
-    };
+    // Use raw SQL to bypass Drizzle ORM bug with defaults in serverless environment
+    const timeEstimateValue = (timeEstimate !== undefined && timeEstimate !== null) ? parseInt(timeEstimate) : null;
+    const requirementsValue = requirements ? (typeof requirements === 'string' ? requirements : JSON.stringify(requirements)) : null;
+    const expiresAtValue = expiresAt ? (expiresAt instanceof Date ? expiresAt : new Date(expiresAt)) : null;
 
-    if (timeEstimate !== undefined && timeEstimate !== null) {
-      insertData.timeEstimate = parseInt(timeEstimate);
-    }
+    const newTask = await db.execute(sql`
+      INSERT INTO tasks (
+        title, 
+        description, 
+        category_id, 
+        employer_id, 
+        price, 
+        currency, 
+        slots,
+        time_estimate,
+        requirements,
+        expires_at
+      ) VALUES (
+        ${title.trim()},
+        ${description.trim()},
+        ${categoryIdNum},
+        ${employerId.trim()},
+        ${priceNum},
+        ${currency},
+        ${slotsNum},
+        ${timeEstimateValue},
+        ${requirementsValue},
+        ${expiresAtValue}
+      )
+      RETURNING *
+    `);
 
-    if (requirements) {
-      insertData.requirements = typeof requirements === 'string' ? requirements : JSON.stringify(requirements);
-    }
+    const insertedTask = newTask.rows[0];
 
-    if (expiresAt) {
-      // Convert expiresAt to Date object if it's a string
-      insertData.expiresAt = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
-    }
-
-    const newTask = await db.insert(tasks).values(insertData).returning();
-
-    return NextResponse.json({ success: true, data: newTask[0] }, { status: 201 });
+    return NextResponse.json({ success: true, data: insertedTask }, { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json(
