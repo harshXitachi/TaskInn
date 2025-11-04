@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
+import { db, client } from '@/db';
 import { tasks, taskSubmissions } from '@/db/schema';
 import { eq, and, gte, lte, like, or, desc, asc, sql } from 'drizzle-orm';
 
@@ -236,7 +236,8 @@ export async function POST(request: NextRequest) {
     const requirementsValue = requirements ? (typeof requirements === 'string' ? requirements : JSON.stringify(requirements)) : null;
     const expiresAtValue = expiresAt ? (expiresAt instanceof Date ? expiresAt : new Date(expiresAt)) : null;
 
-    const newTask = await db.execute(sql`
+    // Use postgres client directly to avoid Drizzle ORM issues
+    const result = await client`
       INSERT INTO tasks (
         title, 
         description, 
@@ -261,9 +262,9 @@ export async function POST(request: NextRequest) {
         ${expiresAtValue}
       )
       RETURNING *
-    `);
+    `;
 
-    const insertedTask = newTask.rows[0];
+    const insertedTask = result[0];
 
     return NextResponse.json({ success: true, data: insertedTask }, { status: 201 });
   } catch (error) {

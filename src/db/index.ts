@@ -5,7 +5,7 @@ import * as schema from '@/db/schema';
 const connectionString = process.env.DATABASE_URL!;
 
 // Configure postgres for serverless environment (Vercel)
-const client = postgres(connectionString, {
+export const client = postgres(connectionString, {
   prepare: false,
   max: 1, // Limit connections in serverless
 });
