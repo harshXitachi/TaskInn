@@ -44,13 +44,18 @@ export default function CreateTaskPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        console.log('Categories response:', data);
+        console.log('Categories API response:', res.status, data);
 
         if (res.ok && Array.isArray(data)) {
+          console.log('Setting categories:', data.length, 'items');
           setCategories(data);
+        } else {
+          console.error('Failed to fetch categories:', data);
+          toast.error('Failed to load categories');
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
+        toast.error('Failed to load categories');
       }
     };
 
@@ -261,14 +266,14 @@ export default function CreateTaskPage() {
             {/* Category */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Category *
+                Category * {categories.length > 0 && `(${categories.length} available)`}
               </label>
               <div className="relative">
                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-black transition-all appearance-none"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-black transition-all appearance-none bg-white"
                   required
                 >
                   <option value="">Select a category</option>
@@ -279,6 +284,11 @@ export default function CreateTaskPage() {
                   ))}
                 </select>
               </div>
+              {categories.length === 0 && (
+                <p className="text-sm text-red-500 mt-2">
+                  ⚠️ No categories found. Please contact support.
+                </p>
+              )}
             </div>
 
             {/* Number of Workers Needed */}
