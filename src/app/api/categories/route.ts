@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { categories } from '@/db/schema';
 import { eq, asc } from 'drizzle-orm';
+import postgres from 'postgres';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+
+    console.log('[Categories API] GET request, id:', id);
 
     // Single category by ID
     if (id) {
@@ -36,18 +39,32 @@ export async function GET(request: NextRequest) {
     }
 
     // List all categories ordered by name
+    console.log('[Categories API] Fetching all categories...');
     const allCategories = await db.select()
       .from(categories)
       .orderBy(asc(categories.name));
 
+    console.log('[Categories API] Found', allCategories.length, 'categories');
     return NextResponse.json(allCategories, { status: 200 });
 
   } catch (error) {
-    console.error('GET error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error: ' + (error as Error).message },
-      { status: 500 }
-    );
+    console.error('[Categories API] Error:', error);
+    
+    // Fallback to raw SQL query
+    try {
+      console.log('[Categories API] Trying raw SQL fallback...');
+      const sql = postgres(process.env.DATABASE_URL!);
+      const result = await sql`SELECT * FROM categories ORDER BY name ASC`;
+      await sql.end();
+      console.log('[Categories API] Raw SQL returned', result.length, 'categories');
+      return NextResponse.json(result, { status: 200 });
+    } catch (fallbackError) {
+      console.error('[Categories API] Fallback error:', fallbackError);
+      return NextResponse.json(
+        { error: 'Internal server error: ' + (error as Error).message },
+        { status: 500 }
+      );
+    }
   }
 }
 
