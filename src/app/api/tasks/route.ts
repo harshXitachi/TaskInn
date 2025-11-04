@@ -239,10 +239,8 @@ export async function POST(request: NextRequest) {
       employerId: employerId.trim(),
       price: priceNum,
       currency: currency,
-      status: 'open',
       slots: slotsNum,
-      slotsFilled: 0,
-      // createdAt will use database default
+      // status, slotsFilled, and createdAt will use database defaults
     };
 
     if (timeEstimate !== undefined && timeEstimate !== null) {
