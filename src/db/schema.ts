@@ -189,8 +189,8 @@ export const wallets = pgTable('wallets', {
   userId: text('user_id').notNull().references(() => user.id),
   currencyType: text('currency_type').notNull(), // "USD" or "USDT_TRC20"
   balance: doublePrecision('balance').notNull().default(0),
-  createdAt: timestamp('created_at', { mode: 'string' }).notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Add new wallet_transactions table
@@ -204,7 +204,7 @@ export const walletTransactions = pgTable('wallet_transactions', {
   referenceId: text('reference_id'),
   description: text('description'),
   transactionHash: text('transaction_hash'),
-  createdAt: timestamp('created_at', { mode: 'string' }).notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Add new admin_wallets table at the end
@@ -214,6 +214,6 @@ export const adminWallets = pgTable('admin_wallets', {
   balance: doublePrecision('balance').notNull().default(0),
   totalEarned: doublePrecision('total_earned').notNull().default(0),
   totalWithdrawn: doublePrecision('total_withdrawn').notNull().default(0),
-  createdAt: timestamp('created_at', { mode: 'string' }).notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
