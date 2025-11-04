@@ -1,19 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { categories } from '@/db/schema';
-import { eq, asc } from 'drizzle-orm';
 import postgres from 'postgres';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
+  let sql: ReturnType<typeof postgres> | null = null;
+  
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     console.log('[Categories API] GET request, id:', id);
 
+    if (!process.env.DATABASE_URL) {
+      console.error('[Categories API] DATABASE_URL not set');
+      return NextResponse.json(
+        { error: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+
+    // Use raw SQL for better reliability in serverless
+    sql = postgres(process.env.DATABASE_URL, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+
     // Single category by ID
     if (id) {
-      if (!id || isNaN(parseInt(id))) {
+      if (isNaN(parseInt(id))) {
         return NextResponse.json(
           { 
             error: 'Valid ID is required',
@@ -23,47 +40,50 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const category = await db.select()
-        .from(categories)
-        .where(eq(categories.id, parseInt(id)))
-        .limit(1);
+      const result = await sql`
+        SELECT id, name, description, icon, created_at
+        FROM categories 
+        WHERE id = ${parseInt(id)}
+        LIMIT 1
+      `;
 
-      if (category.length === 0) {
+      if (result.length === 0) {
         return NextResponse.json(
           { error: 'Category not found' },
           { status: 404 }
         );
       }
 
-      return NextResponse.json(category[0], { status: 200 });
+      return NextResponse.json(result[0], { status: 200 });
     }
 
     // List all categories ordered by name
     console.log('[Categories API] Fetching all categories...');
-    const allCategories = await db.select()
-      .from(categories)
-      .orderBy(asc(categories.name));
+    const allCategories = await sql`
+      SELECT id, name, description, icon, created_at
+      FROM categories 
+      ORDER BY name ASC
+    `;
 
     console.log('[Categories API] Found', allCategories.length, 'categories');
     return NextResponse.json(allCategories, { status: 200 });
 
   } catch (error) {
     console.error('[Categories API] Error:', error);
-    
-    // Fallback to raw SQL query
-    try {
-      console.log('[Categories API] Trying raw SQL fallback...');
-      const sql = postgres(process.env.DATABASE_URL!);
-      const result = await sql`SELECT * FROM categories ORDER BY name ASC`;
-      await sql.end();
-      console.log('[Categories API] Raw SQL returned', result.length, 'categories');
-      return NextResponse.json(result, { status: 200 });
-    } catch (fallbackError) {
-      console.error('[Categories API] Fallback error:', fallbackError);
-      return NextResponse.json(
-        { error: 'Internal server error: ' + (error as Error).message },
-        { status: 500 }
-      );
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch categories',
+        details: (error as Error).message 
+      },
+      { status: 500 }
+    );
+  } finally {
+    if (sql) {
+      try {
+        await sql.end({ timeout: 5 });
+      } catch (e) {
+        console.error('[Categories API] Error closing connection:', e);
+      }
     }
   }
 }
