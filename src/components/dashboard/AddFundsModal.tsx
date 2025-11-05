@@ -84,7 +84,15 @@ export default function AddFundsModal({
           // Redirect to PayPal for payment
           window.location.href = data.approvalUrl;
         } else {
-          toast.error(data.error || "Failed to create PayPal payment");
+          // Check for PayPal account restriction error
+          const errorMsg = data.error || "Failed to create PayPal payment";
+          if (errorMsg.includes("PAYEE_ACCOUNT_RESTRICTED") || errorMsg.includes("UNPROCESSABLE_ENTITY")) {
+            toast.error("PayPal account verification required. Please contact support or use USDT payment method.", {
+              duration: 8000,
+            });
+          } else {
+            toast.error(errorMsg);
+          }
           setLoading(false);
         }
       } else {
