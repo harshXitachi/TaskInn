@@ -126,8 +126,8 @@ export async function PUT(
             userId: employerId,
             currencyType: currencyType,
             balance: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           })
           .returning();
         employerWallet = newEmployerWallet;
@@ -156,7 +156,7 @@ export async function PUT(
           currency: currencyType
         };
       } else {
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date();
 
         // Create worker wallet if it doesn't exist
         if (workerWallet.length === 0) {
