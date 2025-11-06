@@ -2,21 +2,20 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@/db/schema';
 
-const connectionString = process.env.DATABASE_URL;
+// Check if we're in a build environment (no DATABASE_URL needed during build)
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+let client: ReturnType<typeof postgres> | undefined;
+let db: ReturnType<typeof drizzle> | undefined;
 
-// For serverless: Use singleton pattern with conditional initialization
-declare global {
-  var __db__: ReturnType<typeof drizzle> | undefined;
-  var __client__: ReturnType<typeof postgres> | undefined;
-}
+if (!isBuild) {
+  const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
 
-// Reuse connection in development (hot reload)
-if (!global.__client__) {
-  global.__client__ = postgres(connectionString, {
+  client = postgres(connectionString, {
     prepare: false,
     max: 1,
     idle_timeout: 20,
@@ -24,13 +23,11 @@ if (!global.__client__) {
     max_lifetime: 60 * 30,
     onnotice: () => {},
   });
+
+  db = drizzle(client, { schema });
 }
 
-if (!global.__db__) {
-  global.__db__ = drizzle(global.__client__, { schema });
-}
-
-export const client = global.__client__;
-export const db = global.__db__;
+// Export with runtime check
+export { db as db, client as client };
 
 export type Database = typeof db;
