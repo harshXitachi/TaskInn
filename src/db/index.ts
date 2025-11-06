@@ -55,4 +55,9 @@ export const db = {
   }
 };
 
+// Export getDb for raw SQL queries
+export function getDb() {
+  return initDatabase();
+}
+
 export type Database = ReturnType<typeof initDatabase>;
