@@ -9,13 +9,10 @@ let _client: ReturnType<typeof postgres> | null = null;
 function initDatabase() {
   if (_db) return _db;
   
-  let connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error('DATABASE_URL is not set');
   }
-
-  // Use Supabase connection pooler (port 6543) for serverless compatibility
-  connectionString = connectionString.replace(':5432/', ':6543/');
 
   _client = postgres(connectionString, {
     prepare: false,
