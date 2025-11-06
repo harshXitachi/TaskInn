@@ -236,23 +236,29 @@ export async function POST(request: NextRequest) {
     const requirementsValue = requirements ? (typeof requirements === 'string' ? requirements : JSON.stringify(requirements)) : null;
     const expiresAtValue = expiresAt ? (expiresAt instanceof Date ? expiresAt : new Date(expiresAt)) : null;
 
+    // Create the insert data object explicitly
+    const insertData = {
+      title: title.trim(),
+      description: description.trim(),
+      categoryId: categoryIdNum,
+      employerId: employerId.trim(),
+      price: priceNum,
+      currency: currency,
+      slots: slotsNum,
+      timeEstimate: timeEstimateValue,
+      requirements: requirementsValue,
+      expiresAt: expiresAtValue,
+      status: 'open',
+      slotsFilled: 0,
+    };
+
+    // Log for debugging
+    console.log('Inserting task with data:', insertData);
+
     // Use Drizzle ORM insert
     const insertedTask = await db
       .insert(tasks)
-      .values({
-        title: title.trim(),
-        description: description.trim(),
-        categoryId: categoryIdNum,
-        employerId: employerId.trim(),
-        price: priceNum,
-        currency,
-        slots: slotsNum,
-        timeEstimate: timeEstimateValue,
-        requirements: requirementsValue,
-        expiresAt: expiresAtValue,
-        status: 'open',
-        slotsFilled: 0,
-      })
+      .values(insertData)
       .returning();
 
     return NextResponse.json({ success: true, data: insertedTask[0] }, { status: 201 });

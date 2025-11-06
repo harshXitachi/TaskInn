@@ -27,19 +27,32 @@ function initDatabase() {
   return _db;
 }
 
-// Export a getter function that returns the db
-export function getDb() {
-  return initDatabase();
-}
-
-// For backward compatibility, create a db object that calls getDb() for each method
+// Create db wrapper with explicit method definitions to avoid minification issues
 export const db = {
-  select: (...args: any[]) => getDb().select(...args),
-  insert: (...args: any[]) => getDb().insert(...args),
-  update: (...args: any[]) => getDb().update(...args),
-  delete: (...args: any[]) => getDb().delete(...args),
-  transaction: (...args: any[]) => getDb().transaction(...args),
-  get query() { return getDb().query; }
+  select: function(from?: any) {
+    const database = initDatabase();
+    return database.select(from);
+  },
+  insert: function(into: any) {
+    const database = initDatabase();
+    return database.insert(into);
+  },
+  update: function(table: any) {
+    const database = initDatabase();
+    return database.update(table);
+  },
+  delete: function(from: any) {
+    const database = initDatabase();
+    return database.delete(from);
+  },
+  transaction: async function(fn: any) {
+    const database = initDatabase();
+    return database.transaction(fn);
+  },
+  get query() {
+    const database = initDatabase();
+    return database.query;
+  }
 };
 
 export type Database = ReturnType<typeof initDatabase>;
