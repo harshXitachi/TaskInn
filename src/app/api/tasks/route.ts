@@ -239,15 +239,21 @@ export async function POST(request: NextRequest) {
     // Import postgres client directly
     const postgres = (await import('postgres')).default;
     
-    const connectionString = process.env.DATABASE_URL;
+    let connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error('DATABASE_URL is not set');
     }
+    
+    // Use connection pooler for Supabase (port 6543) instead of direct connection (port 5432)
+    // This is required for serverless environments like Vercel
+    connectionString = connectionString.replace(':5432/', ':6543/');
     
     // Create a new postgres client for this request
     const sql = postgres(connectionString, {
       prepare: false,
       max: 1,
+      ssl: 'require',
+      connect_timeout: 10,
     });
     
     try {
