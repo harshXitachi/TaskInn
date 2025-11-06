@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, client } from '@/db';
+import { db } from '@/db';
 import { tasks, taskSubmissions } from '@/db/schema';
-import { eq, and, gte, lte, like, or, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, like, or, desc, asc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -231,42 +231,30 @@ export async function POST(request: NextRequest) {
     // Note: We do NOT deduct money when creating a task
     // Money is only deducted when approving worker submissions
 
-    // Use raw SQL to bypass Drizzle ORM bug with defaults in serverless environment
+    // Prepare values for insertion
     const timeEstimateValue = (timeEstimate !== undefined && timeEstimate !== null) ? parseInt(timeEstimate) : null;
     const requirementsValue = requirements ? (typeof requirements === 'string' ? requirements : JSON.stringify(requirements)) : null;
     const expiresAtValue = expiresAt ? (expiresAt instanceof Date ? expiresAt : new Date(expiresAt)) : null;
 
-    // Use postgres client directly to avoid Drizzle ORM issues
-    const result = await client`
-      INSERT INTO tasks (
-        title, 
-        description, 
-        category_id, 
-        employer_id, 
-        price, 
-        currency, 
-        slots,
-        time_estimate,
-        requirements,
-        expires_at
-      ) VALUES (
-        ${title.trim()},
-        ${description.trim()},
-        ${categoryIdNum},
-        ${employerId.trim()},
-        ${priceNum},
-        ${currency},
-        ${slotsNum},
-        ${timeEstimateValue},
-        ${requirementsValue},
-        ${expiresAtValue}
-      )
-      RETURNING *
-    `;
+    // Use Drizzle ORM insert
+    const insertedTask = await db
+      .insert(tasks)
+      .values({
+        title: title.trim(),
+        description: description.trim(),
+        categoryId: categoryIdNum,
+        employerId: employerId.trim(),
+        price: priceNum,
+        currency,
+        slots: slotsNum,
+        timeEstimate: timeEstimateValue,
+        requirements: requirementsValue,
+        expiresAt: expiresAtValue,
+        status: 'open',
+      })
+      .returning();
 
-    const insertedTask = result[0];
-
-    return NextResponse.json({ success: true, data: insertedTask }, { status: 201 });
+    return NextResponse.json({ success: true, data: insertedTask[0] }, { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json(
