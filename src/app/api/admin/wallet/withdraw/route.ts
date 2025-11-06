@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       .set({
         balance: newBalance,
         totalWithdrawn: newTotalWithdrawn,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date()
       })
       .where(eq(adminWallets.id, adminWallet.id));
 

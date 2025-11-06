@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     await db.update(wallets)
       .set({
         balance: wallet.balance - amount,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(wallets.id, wallet.id));
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       referenceId: withdrawalResult.withdrawalId,
       description: `USDT TRC20 withdrawal to ${walletAddress.substring(0, 10)}... - Commission: ${commissionAmount.toFixed(2)} USDT`,
       transactionHash: withdrawalResult.withdrawalId,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     });
 
     // Update admin wallet with commission
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         .set({
           balance: admin.balance + commissionAmount,
           totalEarned: admin.totalEarned + commissionAmount,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(),
         })
         .where(eq(adminWallets.id, admin.id));
     } else {
@@ -104,8 +104,8 @@ export async function POST(request: NextRequest) {
         balance: commissionAmount,
         totalEarned: commissionAmount,
         totalWithdrawn: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
 

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     // Simulate PayPal payout
     const payoutId = `PAYOUT_${Date.now()}`;
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date();
 
     // Deduct from wallet
     await db
