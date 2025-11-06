@@ -2,23 +2,19 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@/db/schema';
 
-// Cached instances
-let cachedClient: ReturnType<typeof postgres> | null = null;
-let cachedDb: ReturnType<typeof drizzle> | null = null;
+// Singleton cache
+let _client: ReturnType<typeof postgres> | null = null;
+let _db: ReturnType<typeof drizzle> | null = null;
 
-// Initialize database connection lazily
-function initConnection() {
-  if (cachedDb && cachedClient) {
-    return { db: cachedDb, client: cachedClient };
-  }
+function initDb() {
+  if (_db) return _db;
 
   const connectionString = process.env.DATABASE_URL;
-  
   if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set');
+    throw new Error('DATABASE_URL is not set');
   }
 
-  cachedClient = postgres(connectionString, {
+  _client = postgres(connectionString, {
     prepare: false,
     max: 1,
     idle_timeout: 20,
@@ -27,55 +23,36 @@ function initConnection() {
     onnotice: () => {},
   });
 
-  cachedDb = drizzle(cachedClient, { schema });
-  
-  return { db: cachedDb, client: cachedClient };
+  _db = drizzle(_client, { schema });
+  return _db;
 }
 
-// Export getter functions wrapped to look like the actual objects
-const dbHandler = {
-  get select() {
-    const connection = initConnection();
-    return connection.db.select.bind(connection.db);
-  },
-  get insert() {
-    const connection = initConnection();
-    return connection.db.insert.bind(connection.db);
-  },
-  get update() {
-    const connection = initConnection();
-    return connection.db.update.bind(connection.db);
-  },
-  get delete() {
-    const connection = initConnection();
-    return connection.db.delete.bind(connection.db);
-  },
-  get query() {
-    const connection = initConnection();
-    return connection.db.query;
-  },
-  get transaction() {
-    const connection = initConnection();
-    return connection.db.transaction.bind(connection.db);
-  },
-  get $with() {
-    const connection = initConnection();
-    return connection.db.$with.bind(connection.db);
-  },
-};
+function initClient() {
+  if (_client) return _client;
+  initDb(); // This will init both
+  return _client!;
+}
 
-const clientHandler = {
-  get end() {
-    const connection = initConnection();
-    return connection.client.end.bind(connection.client);
-  },
-  get unsafe() {
-    const connection = initConnection();
-    return connection.client.unsafe.bind(connection.client);
-  },
-};
+// Create a wrapper that looks like drizzle but initializes lazily
+const dbProxy = {} as ReturnType<typeof drizzle>;
+const methods = ['select', 'insert', 'update', 'delete', 'transaction', '$with'] as const;
 
-export const db = dbHandler as any;
-export const client = clientHandler as any;
+methods.forEach((method) => {
+  Object.defineProperty(dbProxy, method, {
+    get() {
+      const instance = initDb();
+      return instance[method].bind(instance);
+    },
+  });
+});
 
-export type Database = ReturnType<typeof initConnection>['db'];
+// Add query property
+Object.defineProperty(dbProxy, 'query', {
+  get() {
+    return initDb().query;
+  },
+});
+
+export const db = dbProxy;
+export const client = { get: initClient } as any;
+export type Database = ReturnType<typeof initDb>;
