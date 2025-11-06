@@ -62,15 +62,21 @@ export default function EarningsPage() {
         if (walletsRes.ok) {
           const walletsData = await walletsRes.json();
           setWallets(walletsData);
-        }
 
-        // Fetch transactions
-        const transactionsRes = await fetch(`/api/wallets/transactions?userId=${userId}`, {
-          headers: { Authorization: `Bearer ${session?.access_token}` },
-        });
-        if (transactionsRes.ok) {
-          const transactionsData = await transactionsRes.json();
-          setTransactions(transactionsData);
+          // Fetch transactions for all wallets
+          const allTransactions: Transaction[] = [];
+          for (const wallet of walletsData) {
+            const transactionsRes = await fetch(`/api/wallets/transactions?walletId=${wallet.id}`, {
+              headers: { Authorization: `Bearer ${session?.access_token}` },
+            });
+            if (transactionsRes.ok) {
+              const txData = await transactionsRes.json();
+              allTransactions.push(...txData);
+            }
+          }
+          // Sort by createdAt DESC
+          allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setTransactions(allTransactions);
         }
       } catch (error) {
         console.error("Error fetching earnings:", error);

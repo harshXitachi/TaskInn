@@ -81,16 +81,20 @@ export default function EmployerPaymentsPage() {
       if (Array.isArray(data)) {
         setWallets(data);
 
-        // Fetch transactions for first wallet
-        if (data.length > 0) {
-          const txRes = await fetch(`/api/wallets/transactions?walletId=${data[0].id}`, {
+        // Fetch transactions for all wallets
+        const allTransactions: Transaction[] = [];
+        for (const wallet of data) {
+          const txRes = await fetch(`/api/wallets/transactions?walletId=${wallet.id}`, {
             headers: { Authorization: `Bearer ${session?.access_token || ''}` },
           });
           const txData = await txRes.json();
           if (Array.isArray(txData)) {
-            setTransactions(txData);
+            allTransactions.push(...txData);
           }
         }
+        // Sort by createdAt DESC
+        allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setTransactions(allTransactions);
       }
     } catch (error) {
       console.error("Error fetching wallets:", error);
