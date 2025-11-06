@@ -251,6 +251,7 @@ export async function POST(request: NextRequest) {
         requirements: requirementsValue,
         expiresAt: expiresAtValue,
         status: 'open',
+        slotsFilled: 0,
       })
       .returning();
 
