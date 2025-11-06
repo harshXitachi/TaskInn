@@ -236,44 +236,62 @@ export async function POST(request: NextRequest) {
     const requirementsValue = requirements ? (typeof requirements === 'string' ? requirements : JSON.stringify(requirements)) : null;
     const expiresAtValue = expiresAt ? (expiresAt instanceof Date ? expiresAt : new Date(expiresAt)) : null;
 
-    // Use raw SQL to avoid any Drizzle ORM issues
-    const { getDb } = await import('@/db');
-    const database = getDb();
+    // Import postgres client directly
+    const postgres = (await import('postgres')).default;
     
-    // Execute raw SQL insert
-    const result = await database.execute(
-      sql`INSERT INTO tasks (
-        title,
-        description,
-        category_id,
-        employer_id,
-        price,
-        currency,
-        slots,
-        time_estimate,
-        requirements,
-        expires_at,
-        status,
-        slots_filled
-      ) VALUES (
-        ${title.trim()},
-        ${description.trim()},
-        ${categoryIdNum},
-        ${employerId.trim()},
-        ${priceNum},
-        ${currency},
-        ${slotsNum},
-        ${timeEstimateValue},
-        ${requirementsValue},
-        ${expiresAtValue},
-        ${'open'},
-        ${0}
-      ) RETURNING *`
-    );
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL is not set');
+    }
     
-    const insertedTask = result.rows;
-
-    return NextResponse.json({ success: true, data: insertedTask[0] }, { status: 201 });
+    // Create a new postgres client for this request
+    const sql = postgres(connectionString, {
+      prepare: false,
+      max: 1,
+    });
+    
+    try {
+      // Execute raw SQL insert using postgres-js
+      const result = await sql`
+        INSERT INTO tasks (
+          title,
+          description,
+          category_id,
+          employer_id,
+          price,
+          currency,
+          slots,
+          time_estimate,
+          requirements,
+          expires_at,
+          status,
+          slots_filled
+        ) VALUES (
+          ${title.trim()},
+          ${description.trim()},
+          ${categoryIdNum},
+          ${employerId.trim()},
+          ${priceNum},
+          ${currency},
+          ${slotsNum},
+          ${timeEstimateValue},
+          ${requirementsValue},
+          ${expiresAtValue},
+          ${'open'},
+          ${0}
+        ) RETURNING *
+      `;
+      
+      const insertedTask = result;
+      
+      // Close the connection
+      await sql.end();
+      
+      return NextResponse.json({ success: true, data: insertedTask[0] }, { status: 201 });
+    } catch (error) {
+      await sql.end();
+      throw error;
+    }
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json(
