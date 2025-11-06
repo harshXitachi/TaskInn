@@ -34,18 +34,45 @@ function initConnection() {
 
 // Export getter functions wrapped to look like the actual objects
 const dbHandler = {
-  get select() { return initConnection().db.select; },
-  get insert() { return initConnection().db.insert; },
-  get update() { return initConnection().db.update; },
-  get delete() { return initConnection().db.delete; },
-  get query() { return initConnection().db.query; },
-  get transaction() { return initConnection().db.transaction; },
-  get $with() { return initConnection().db.$with; },
+  get select() {
+    const connection = initConnection();
+    return connection.db.select.bind(connection.db);
+  },
+  get insert() {
+    const connection = initConnection();
+    return connection.db.insert.bind(connection.db);
+  },
+  get update() {
+    const connection = initConnection();
+    return connection.db.update.bind(connection.db);
+  },
+  get delete() {
+    const connection = initConnection();
+    return connection.db.delete.bind(connection.db);
+  },
+  get query() {
+    const connection = initConnection();
+    return connection.db.query;
+  },
+  get transaction() {
+    const connection = initConnection();
+    return connection.db.transaction.bind(connection.db);
+  },
+  get $with() {
+    const connection = initConnection();
+    return connection.db.$with.bind(connection.db);
+  },
 };
 
 const clientHandler = {
-  get end() { return initConnection().client.end; },
-  get unsafe() { return initConnection().client.unsafe; },
+  get end() {
+    const connection = initConnection();
+    return connection.client.end.bind(connection.client);
+  },
+  get unsafe() {
+    const connection = initConnection();
+    return connection.client.unsafe.bind(connection.client);
+  },
 };
 
 export const db = dbHandler as any;
