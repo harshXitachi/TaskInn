@@ -2,20 +2,23 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@/db/schema';
 
-// Check if we're in a build environment (no DATABASE_URL needed during build)
-const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
+// Cached instances
+let cachedClient: ReturnType<typeof postgres> | null = null;
+let cachedDb: ReturnType<typeof drizzle> | null = null;
 
-let client: ReturnType<typeof postgres> | undefined;
-let db: ReturnType<typeof drizzle> | undefined;
+// Initialize database connection lazily
+function initConnection() {
+  if (cachedDb && cachedClient) {
+    return { db: cachedDb, client: cachedClient };
+  }
 
-if (!isBuild) {
   const connectionString = process.env.DATABASE_URL;
   
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  client = postgres(connectionString, {
+  cachedClient = postgres(connectionString, {
     prepare: false,
     max: 1,
     idle_timeout: 20,
@@ -24,10 +27,28 @@ if (!isBuild) {
     onnotice: () => {},
   });
 
-  db = drizzle(client, { schema });
+  cachedDb = drizzle(cachedClient, { schema });
+  
+  return { db: cachedDb, client: cachedClient };
 }
 
-// Export with runtime check
-export { db as db, client as client };
+// Export getter functions wrapped to look like the actual objects
+const dbHandler = {
+  get select() { return initConnection().db.select; },
+  get insert() { return initConnection().db.insert; },
+  get update() { return initConnection().db.update; },
+  get delete() { return initConnection().db.delete; },
+  get query() { return initConnection().db.query; },
+  get transaction() { return initConnection().db.transaction; },
+  get $with() { return initConnection().db.$with; },
+};
 
-export type Database = typeof db;
+const clientHandler = {
+  get end() { return initConnection().client.end; },
+  get unsafe() { return initConnection().client.unsafe; },
+};
+
+export const db = dbHandler as any;
+export const client = clientHandler as any;
+
+export type Database = ReturnType<typeof initConnection>['db'];
