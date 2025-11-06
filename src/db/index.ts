@@ -2,13 +2,15 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@/db/schema';
 
-// Cached connection for serverless
-let cachedClient: ReturnType<typeof postgres> | null = null;
-let cachedDb: ReturnType<typeof drizzle> | null = null;
+// Global cached connection for serverless
+let globalClient: ReturnType<typeof postgres> | undefined;
+let globalDb: ReturnType<typeof drizzle> | undefined;
 
-// Initialize database connection (lazy)
-function initDb() {
-  if (cachedDb) return cachedDb;
+// Initialize database connection (lazy, only when needed)
+function getConnection() {
+  if (globalDb && globalClient) {
+    return { db: globalDb, client: globalClient };
+  }
 
   const connectionString = process.env.DATABASE_URL;
   
@@ -17,7 +19,7 @@ function initDb() {
   }
 
   // Configure postgres for serverless environment (Vercel/Amplify)
-  cachedClient = postgres(connectionString, {
+  globalClient = postgres(connectionString, {
     prepare: false,
     max: 1, // Limit connections in serverless
     idle_timeout: 20,
@@ -26,23 +28,25 @@ function initDb() {
     onnotice: () => {}, // Suppress notices
   });
 
-  cachedDb = drizzle(cachedClient, { schema });
-  return cachedDb;
+  globalDb = drizzle(globalClient, { schema });
+  
+  return { db: globalDb, client: globalClient };
 }
 
-// Create a Proxy to make it work like the old export
+// Export getters that initialize on first use
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-  get(target, prop) {
-    const connection = initDb();
-    return (connection as any)[prop];
+  get: (_, prop) => {
+    const { db } = getConnection();
+    const value = (db as any)[prop];
+    return typeof value === 'function' ? value.bind(db) : value;
   }
 });
 
-// Export client for direct access if needed
 export const client = new Proxy({} as ReturnType<typeof postgres>, {
-  get(target, prop) {
-    if (!cachedClient) initDb();
-    return (cachedClient as any)[prop];
+  get: (_, prop) => {
+    const { client } = getConnection();
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
   }
 });
 
