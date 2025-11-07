@@ -7,28 +7,36 @@ import { eq } from 'drizzle-orm';
 async function validateAdminSession(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
+    console.log('Admin wallet stats - Auth header:', authHeader ? 'Present' : 'Missing');
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Admin wallet stats - Invalid auth header format');
       return null;
     }
 
     const sessionData = authHeader.replace('Bearer ', '');
+    console.log('Admin wallet stats - Session data:', sessionData);
     
     // Parse the session data (it's the admin ID stored in localStorage as bearer_token)
     // For admin, we'll validate by checking if the admin exists
     const adminId = parseInt(sessionData);
     if (isNaN(adminId)) {
+      console.log('Admin wallet stats - Invalid admin ID format');
       return null;
     }
 
+    console.log('Admin wallet stats - Validating admin ID:', adminId);
     const admin = await db.select()
       .from(adminSettings)
       .where(eq(adminSettings.id, adminId))
       .limit(1);
 
     if (admin.length === 0) {
+      console.log('Admin wallet stats - Admin not found in database');
       return null;
     }
 
+    console.log('Admin wallet stats - Admin validated successfully');
     return admin[0];
   } catch (error) {
     console.error('Admin session validation error:', error);
