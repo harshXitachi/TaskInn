@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { DollarSign, Wallet, X, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { DollarSign, Wallet, X, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface WithdrawModalProps {
@@ -134,8 +134,27 @@ export default function WithdrawModal({
     }
   };
 
+  const [commissionRate, setCommissionRate] = useState<number>(0.05);
+  
+  // Fetch commission rate when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetch("/api/admin/settings")
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setCommissionRate(data[0].commissionRate || 0.05);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+  
   const withdrawAmount = parseFloat(withdrawData.amount) || 0;
   const maxBalance = withdrawData.currencyType === "USD" ? usdBalance : usdtBalance;
+  const commissionAmount = withdrawAmount * commissionRate;
+  const coinpaymentsFee = withdrawData.currencyType === "USDT_TRC20" ? withdrawAmount * 0.005 : 0; // 0.5% CoinPayments fee
+  const netAmount = withdrawAmount - commissionAmount;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -291,21 +310,59 @@ export default function WithdrawModal({
             </div>
           )}
 
-          {/* Withdrawal Summary */}
+          {/* Withdrawal Summary with Fee Breakdown */}
           {withdrawAmount >= 10 && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
-              <div className="flex justify-between items-center">
-                <span className="text-blue-900 font-semibold">You will receive:</span>
-                <span className="font-bold text-blue-600 text-2xl">
-                  {withdrawData.currencyType === "USD" ? "$" : "₮"}
-                  {withdrawAmount.toFixed(2)}
-                </span>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
+                <div className="flex items-center gap-2 text-blue-800 font-medium mb-4">
+                  <Info size={18} />
+                  <span>Withdrawal Breakdown</span>
+                </div>
+                
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-700">Withdrawal Amount:</span>
+                    <span className="font-semibold text-gray-900">
+                      {withdrawData.currencyType === "USD" ? "$" : "₮"}
+                      {withdrawAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-red-600">Platform Commission ({(commissionRate * 100).toFixed(1)}%):</span>
+                    <span className="font-semibold text-red-600">
+                      - {withdrawData.currencyType === "USD" ? "$" : "₮"}
+                      {commissionAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {withdrawData.currencyType === "USDT_TRC20" && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-orange-600">CoinPayments Fee (~0.5%):</span>
+                      <span className="font-semibold text-orange-600">
+                        ~ {withdrawData.currencyType === "USD" ? "$" : "₮"}
+                        {coinpaymentsFee.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="border-t-2 border-blue-300 pt-2.5 mt-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-900 font-bold">You will receive:</span>
+                      <span className="font-bold text-emerald-600 text-2xl">
+                        {withdrawData.currencyType === "USD" ? "$" : "₮"}
+                        {netAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-blue-700 mt-3">
+                  {withdrawData.currencyType === "USD"
+                    ? "Funds will be sent to your PayPal account"
+                    : "Funds will be sent to your TRC-20 address"}
+                </p>
               </div>
-              <p className="text-xs text-blue-700 mt-2">
-                {withdrawData.currencyType === "USD"
-                  ? "Funds will be sent to your PayPal account"
-                  : "Funds will be sent to your TRC-20 address"}
-              </p>
             </div>
           )}
 

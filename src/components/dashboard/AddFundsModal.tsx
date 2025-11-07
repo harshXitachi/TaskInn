@@ -153,8 +153,11 @@ export default function AddFundsModal({
     onClose(); // Close the add funds modal
   };
 
-  // Amount preview
+  // Amount preview with commission calculation
   const depositAmount = parseFloat(addFundsData.amount) || 0;
+  const commissionAmount = depositAmount * commissionRate;
+  const coinpaymentsFee = addFundsData.currencyType === "USDT_TRC20" ? depositAmount * 0.005 : 0; // 0.5% CoinPayments fee for USDT
+  const netAmount = depositAmount - commissionAmount;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -262,25 +265,59 @@ export default function AddFundsModal({
             </p>
           </div>
 
-          {/* Deposit Preview */}
+          {/* Deposit Preview with Fee Breakdown */}
           {depositAmount >= 5 && (
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl p-5">
-              <div className="flex items-center gap-2 text-emerald-800 font-medium mb-3">
-                <Info size={18} />
-                <span>Deposit Amount</span>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
+                <div className="flex items-center gap-2 text-blue-800 font-medium mb-4">
+                  <Info size={18} />
+                  <span>Payment Breakdown</span>
+                </div>
+                
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-700">Deposit Amount:</span>
+                    <span className="font-semibold text-gray-900">
+                      {addFundsData.currencyType === "USD" ? "$" : "₮"}
+                      {depositAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-red-600">Platform Commission ({(commissionRate * 100).toFixed(1)}%):</span>
+                    <span className="font-semibold text-red-600">
+                      - {addFundsData.currencyType === "USD" ? "$" : "₮"}
+                      {commissionAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {addFundsData.currencyType === "USDT_TRC20" && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-orange-600">CoinPayments Fee (~0.5%):</span>
+                      <span className="font-semibold text-orange-600">
+                        ~ {addFundsData.currencyType === "USD" ? "$" : "₮"}
+                        {coinpaymentsFee.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="border-t-2 border-blue-300 pt-2.5 mt-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-900 font-bold">You will receive:</span>
+                      <span className="font-bold text-emerald-600 text-2xl">
+                        {addFundsData.currencyType === "USD" ? "$" : "₮"}
+                        {netAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-blue-700 mt-3">
+                  {addFundsData.currencyType === "USD" 
+                    ? "Payment via PayPal" 
+                    : "Payment via USDT TRC-20 (CoinPayments)"}
+                </p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-emerald-900 font-semibold">You will deposit:</span>
-                <span className="font-bold text-emerald-600 text-2xl">
-                  {addFundsData.currencyType === "USD" ? "$" : "₮"}
-                  {depositAmount.toFixed(2)}
-                </span>
-              </div>
-              <p className="text-xs text-emerald-700 mt-2">
-                {addFundsData.currencyType === "USD" 
-                  ? "Payment via PayPal" 
-                  : "Payment via USDT TRC-20"}
-              </p>
             </div>
           )}
 
